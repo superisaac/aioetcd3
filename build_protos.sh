@@ -20,38 +20,50 @@ proto_path="./tmp:$ETCDREPO:$ETCDREPO/vendor:$ETCDREPO/vendor/google.golang.org/
 function cproto() {
     protopath=$1
     package=$2
+    genrpc=$3
     protodir=`dirname $protopath`
 
     outdir=./aioetcd3/pb/$package/
     mkdir -p $outdir
     touch $outdir/__init__.py
-    
-    echo Compiling `basename $protopath`
-    python -m grpc_tools.protoc -I $protodir \
-           --proto_path="$proto_path" \
-           --python_out=$outdir \
-           --grpclib_python_out=$outdir \
-           $protopath
+
+    echo Compiling `basename $protopath`    
+    if [ "genrpc$genrpc" == "genrpctrue" ]; then
+        python -m grpc_tools.protoc -I $protodir \
+               --proto_path="$proto_path" \
+               --python_out=$outdir \
+               --grpclib_python_out=$outdir \
+               $protopath
+    else
+        python -m grpc_tools.protoc -I $protodir \
+               --proto_path="$proto_path" \
+               --python_out=$outdir \
+               $protopath
+    fi
 }
 
-#cproto $GWREPO/third_party/googleapis/google/api/annotations.proto google/api
+cproto $GWREPO/third_party/googleapis/google/api/annotations.proto google/api
 cproto $ETCDREPO/vendor/github.com/gogo/protobuf/gogoproto/gogo.proto gogoproto
 cproto $ETCDREPO/mvcc/mvccpb/kv.proto etcd/mvcc/mvccpb
 cproto $ETCDREPO/auth/authpb/auth.proto etcd/auth/authpb
-cproto $ETCDREPO/etcdserver/etcdserverpb/rpc.proto etcdserverpb
+cproto $ETCDREPO/etcdserver/etcdserverpb/rpc.proto etcdserverpb true
 cproto $ETCDREPO/etcdserver/etcdserverpb/etcdserver.proto etcdserverpb
 
 for f in $(find aioetcd3/pb -name '*_pb2.py' -or -name '*_grpc.py')
 do
-    sed -ie 's/from etcd/from aioetcd.pb.etcd/g' $f
-    sed -ie 's/from gogoproto/from aioetcd.pb.gogoproto/g' $f
-    sed -ie 's/from etcdserverpb/from aioetcd.pb.etcdserverpb/g' $f
-    sed -ie 's/import etcd/import aioetcd.pb.etcd/g' $f
-    sed -ie 's/import gogoproto/import aioetcd.pb.gogoproto/g' $f
-    sed -ie 's/import etcdserverpb/import aioetcd.pb.etcdserverpb/g' $f    
+    sed -ie 's/from etcd/from aioetcd3.pb.etcd/g' $f
+    sed -ie 's/from gogoproto/from aioetcd3.pb.gogoproto/g' $f
+    sed -ie 's/from etcdserverpb/from aioetcd3.pb.etcdserverpb/g' $f
+    sed -ie 's/from google\.api/from aioetcd3.pb.google.api/g' $f
+
+    sed -ie 's/import etcd/import aioetcd3.pb.etcd/g' $f
+    sed -ie 's/import gogoproto/import aioetcd3.pb.gogoproto/g' $f
+    sed -ie 's/import etcdserverpb/import aioetcd3.pb.etcdserverpb/g' $f
+    sed -ie 's/import google\.api/import aioetcd3.pb.google.api/g' $f
+    sed -ie 's/import rpc_pb2/import aioetcd3.pb.rpc_pb2/g' $f
 done
 
-find aioetcd3/pb -name '*.pye' | xargs rm 
+find aioetcd3/pb -name '*.pye' | xargs rm
 
 for dir in $(find aioetcd3 -type d)
 do

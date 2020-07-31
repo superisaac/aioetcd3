@@ -12,10 +12,10 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from aioetcd.pb.gogoproto import gogo_pb2 as gogoproto_dot_gogo__pb2
-from aioetcd.pb.etcd.mvcc.mvccpb import kv_pb2 as etcd_dot_mvcc_dot_mvccpb_dot_kv__pb2
-from aioetcd.pb.etcd.auth.authpb import auth_pb2 as etcd_dot_auth_dot_authpb_dot_auth__pb2
-from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
+from aioetcd3.pb.gogoproto import gogo_pb2 as gogoproto_dot_gogo__pb2
+from aioetcd3.pb.etcd.mvcc.mvccpb import kv_pb2 as etcd_dot_mvcc_dot_mvccpb_dot_kv__pb2
+from aioetcd3.pb.etcd.auth.authpb import auth_pb2 as etcd_dot_auth_dot_authpb_dot_auth__pb2
+from aioetcd3.pb.google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
