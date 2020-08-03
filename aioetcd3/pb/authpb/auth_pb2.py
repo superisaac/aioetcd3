@@ -11,18 +11,16 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from aioetcd3.pb.gogoproto import gogo_pb2 as gogoproto_dot_gogo__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='auth.proto',
   package='authpb',
   syntax='proto3',
-  serialized_options=b'\310\342\036\001\340\342\036\001\320\342\036\001\310\341\036\000\320\341\036\000',
+  serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\nauth.proto\x12\x06\x61uthpb\x1a\x14gogoproto/gogo.proto\"%\n\x0eUserAddOptions\x12\x13\n\x0bno_password\x18\x01 \x01(\x08\"^\n\x04User\x12\x0c\n\x04name\x18\x01 \x01(\x0c\x12\x10\n\x08password\x18\x02 \x01(\x0c\x12\r\n\x05roles\x18\x03 \x03(\t\x12\'\n\x07options\x18\x04 \x01(\x0b\x32\x16.authpb.UserAddOptions\"\x83\x01\n\nPermission\x12)\n\x08permType\x18\x01 \x01(\x0e\x32\x17.authpb.Permission.Type\x12\x0b\n\x03key\x18\x02 \x01(\x0c\x12\x11\n\trange_end\x18\x03 \x01(\x0c\"*\n\x04Type\x12\x08\n\x04READ\x10\x00\x12\t\n\x05WRITE\x10\x01\x12\r\n\tREADWRITE\x10\x02\"?\n\x04Role\x12\x0c\n\x04name\x18\x01 \x01(\x0c\x12)\n\rkeyPermission\x18\x02 \x03(\x0b\x32\x12.authpb.PermissionB\x14\xc8\xe2\x1e\x01\xe0\xe2\x1e\x01\xd0\xe2\x1e\x01\xc8\xe1\x1e\x00\xd0\xe1\x1e\x00\x62\x06proto3'
-  ,
-  dependencies=[gogoproto_dot_gogo__pb2.DESCRIPTOR,])
+  serialized_pb=b'\n\nauth.proto\x12\x06\x61uthpb\"%\n\x0eUserAddOptions\x12\x13\n\x0bno_password\x18\x01 \x01(\x08\"^\n\x04User\x12\x0c\n\x04name\x18\x01 \x01(\x0c\x12\x10\n\x08password\x18\x02 \x01(\x0c\x12\r\n\x05roles\x18\x03 \x03(\t\x12\'\n\x07options\x18\x04 \x01(\x0b\x32\x16.authpb.UserAddOptions\"\x83\x01\n\nPermission\x12)\n\x08permType\x18\x01 \x01(\x0e\x32\x17.authpb.Permission.Type\x12\x0b\n\x03key\x18\x02 \x01(\x0c\x12\x11\n\trange_end\x18\x03 \x01(\x0c\"*\n\x04Type\x12\x08\n\x04READ\x10\x00\x12\t\n\x05WRITE\x10\x01\x12\r\n\tREADWRITE\x10\x02\"?\n\x04Role\x12\x0c\n\x04name\x18\x01 \x01(\x0c\x12)\n\rkeyPermission\x18\x02 \x03(\x0b\x32\x12.authpb.Permissionb\x06proto3'
+)
 
 
 
@@ -51,8 +49,8 @@ _PERMISSION_TYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=269,
-  serialized_end=311,
+  serialized_start=247,
+  serialized_end=289,
 )
 _sym_db.RegisterEnumDescriptor(_PERMISSION_TYPE)
 
@@ -84,8 +82,8 @@ _USERADDOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=44,
-  serialized_end=81,
+  serialized_start=22,
+  serialized_end=59,
 )
 
 
@@ -137,8 +135,8 @@ _USER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=83,
-  serialized_end=177,
+  serialized_start=61,
+  serialized_end=155,
 )
 
 
@@ -184,8 +182,8 @@ _PERMISSION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=180,
-  serialized_end=311,
+  serialized_start=158,
+  serialized_end=289,
 )
 
 
@@ -223,8 +221,8 @@ _ROLE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=313,
-  serialized_end=376,
+  serialized_start=291,
+  serialized_end=354,
 )
 
 _USER.fields_by_name['options'].message_type = _USERADDOPTIONS
@@ -266,5 +264,4 @@ Role = _reflection.GeneratedProtocolMessageType('Role', (_message.Message,), {
 _sym_db.RegisterMessage(Role)
 
 
-DESCRIPTOR._options = None
 # @@protoc_insertion_point(module_scope)

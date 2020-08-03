@@ -9,11 +9,9 @@ import grpclib.client
 if typing.TYPE_CHECKING:
     import grpclib.server
 
-import aioetcd3.pb.gogoproto.gogo_pb2
-import aioetcd3.pb.etcd.mvcc.mvccpb.kv_pb2
-import aioetcd3.pb.etcd.auth.authpb.auth_pb2
-import aioetcd3.pb.google.api.annotations_pb2
-import aioetcd3.pb.rpc_pb2
+from aioetcd3.pb.mvccpb import kv_pb2
+from aioetcd3.pb.authpb import auth_pb2
+from aioetcd3.pb.etcdserverpb import rpc_pb2
 
 
 class KVBase(abc.ABC):

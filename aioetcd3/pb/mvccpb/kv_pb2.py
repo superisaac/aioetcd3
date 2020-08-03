@@ -11,18 +11,16 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from aioetcd3.pb.gogoproto import gogo_pb2 as gogoproto_dot_gogo__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='kv.proto',
   package='mvccpb',
   syntax='proto3',
-  serialized_options=b'\310\342\036\001\340\342\036\001\320\342\036\001\310\341\036\000\320\341\036\000',
+  serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x08kv.proto\x12\x06mvccpb\x1a\x14gogoproto/gogo.proto\"u\n\x08KeyValue\x12\x0b\n\x03key\x18\x01 \x01(\x0c\x12\x17\n\x0f\x63reate_revision\x18\x02 \x01(\x03\x12\x14\n\x0cmod_revision\x18\x03 \x01(\x03\x12\x0f\n\x07version\x18\x04 \x01(\x03\x12\r\n\x05value\x18\x05 \x01(\x0c\x12\r\n\x05lease\x18\x06 \x01(\x03\"\x91\x01\n\x05\x45vent\x12%\n\x04type\x18\x01 \x01(\x0e\x32\x17.mvccpb.Event.EventType\x12\x1c\n\x02kv\x18\x02 \x01(\x0b\x32\x10.mvccpb.KeyValue\x12!\n\x07prev_kv\x18\x03 \x01(\x0b\x32\x10.mvccpb.KeyValue\" \n\tEventType\x12\x07\n\x03PUT\x10\x00\x12\n\n\x06\x44\x45LETE\x10\x01\x42\x14\xc8\xe2\x1e\x01\xe0\xe2\x1e\x01\xd0\xe2\x1e\x01\xc8\xe1\x1e\x00\xd0\xe1\x1e\x00\x62\x06proto3'
-  ,
-  dependencies=[gogoproto_dot_gogo__pb2.DESCRIPTOR,])
+  serialized_pb=b'\n\x08kv.proto\x12\x06mvccpb\"u\n\x08KeyValue\x12\x0b\n\x03key\x18\x01 \x01(\x0c\x12\x17\n\x0f\x63reate_revision\x18\x02 \x01(\x03\x12\x14\n\x0cmod_revision\x18\x03 \x01(\x03\x12\x0f\n\x07version\x18\x04 \x01(\x03\x12\r\n\x05value\x18\x05 \x01(\x0c\x12\r\n\x05lease\x18\x06 \x01(\x03\"\x91\x01\n\x05\x45vent\x12%\n\x04type\x18\x01 \x01(\x0e\x32\x17.mvccpb.Event.EventType\x12\x1c\n\x02kv\x18\x02 \x01(\x0b\x32\x10.mvccpb.KeyValue\x12!\n\x07prev_kv\x18\x03 \x01(\x0b\x32\x10.mvccpb.KeyValue\" \n\tEventType\x12\x07\n\x03PUT\x10\x00\x12\n\n\x06\x44\x45LETE\x10\x01\x62\x06proto3'
+)
 
 
 
@@ -46,8 +44,8 @@ _EVENT_EVENTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=275,
-  serialized_end=307,
+  serialized_start=253,
+  serialized_end=285,
 )
 _sym_db.RegisterEnumDescriptor(_EVENT_EVENTTYPE)
 
@@ -114,8 +112,8 @@ _KEYVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=42,
-  serialized_end=159,
+  serialized_start=20,
+  serialized_end=137,
 )
 
 
@@ -161,8 +159,8 @@ _EVENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=162,
-  serialized_end=307,
+  serialized_start=140,
+  serialized_end=285,
 )
 
 _EVENT.fields_by_name['type'].enum_type = _EVENT_EVENTTYPE
@@ -188,5 +186,4 @@ Event = _reflection.GeneratedProtocolMessageType('Event', (_message.Message,), {
 _sym_db.RegisterMessage(Event)
 
 
-DESCRIPTOR._options = None
 # @@protoc_insertion_point(module_scope)
