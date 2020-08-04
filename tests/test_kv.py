@@ -4,7 +4,7 @@ from aioetcd3.utils import ensure_bytes, prefix_range_end
 
 @pytest.mark.asyncio
 async def test_put_get():
-    c = Client('127.0.0.1', 2379)
+    c = Client('http://127.0.0.1')
     await c.kv.put("hello", "nice")
 
     r = await c.kv.get("hello")
@@ -12,7 +12,7 @@ async def test_put_get():
 
 @pytest.mark.asyncio
 async def test_range_put_get():
-    c = Client('127.0.0.1', 2379)
+    c = Client('http://127.0.0.1')
     for i in range(5):
         await c.kv.put(f'what{i}', f'ok{i}')
 

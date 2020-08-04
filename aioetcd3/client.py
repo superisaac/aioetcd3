@@ -1,7 +1,14 @@
-from typing import Union, Optional, Any
-from grpclib.client import Channel
+from typing import Union, Optional, Any, List, Tuple, Dict, Type, AsyncGenerator
+import logging
+from urllib.parse import urlparse
 import asyncio
 from asyncio import Queue
+
+from random import choice
+from functools import wraps
+
+from grpclib.client import Channel, Stream
+from grpclib.exceptions import StreamTerminatedError
 
 from aioetcd3.pb.etcdserverpb import rpc_pb2 as pb2
 from aioetcd3.pb.mvccpb import kv_pb2
@@ -11,40 +18,124 @@ from aioetcd3.pb.etcdserverpb.rpc_grpc import (
 
 from .utils import ensure_bytes, prefix_range_end
 
+logger = logging.getLogger(__name__)
+
+KeyRange = Tuple[Union[bytes, str], Union[bytes, str]]
+
 class Client:
     channel: Channel
-    _kv: 'KVClient' = None
-    _lease: 'LeaseClient' = None
-    _watch: 'WatchClient' = None
-    continue_stream: bool = True
+    status: str = 'alive'
+    _kv: Optional['KVClient'] = None
+    _lease: Optional['LeaseClient'] = None
+    _watch: Optional['WatchClient'] = None
+    _cluster: Optional['ClusterClient'] = None
+    _server_urls: List[str]
+    _current_server_url: str = ''
+    _etcd_args: Dict[str, Any]
 
-    def __init__(self, *args, **kwargs):
-        self.channel = Channel(*args, **kwargs)
+    def __init__(self, server_url, **kwargs):
+        self._server_urls = [server_url]
+        self._etcd_args = kwargs
+        self.select_server()
+
+    def select_server(self):
+        assert self._server_urls
+        self._current_server_url = choice(self._server_urls)
+        logger.info('selected etcd server %s', self._current_server_url)
+        parsed = urlparse(self._current_server_url)
+        if ':' in parsed.netloc:
+            host, port = parsed.netloc.split(':')
+            port = int(port)
+        else:
+            host = parsed.netloc
+            port = 2379
+        # TODO: handle ssl
+        self.channel = Channel(host, port, **self._etcd_args)
+
+    def is_alive(self) -> bool:
+        return self.status == 'alive'
+
+    def close(self) -> None:
+        self.status = 'closed'
+        self.channel.close()
+        print('cccc')
+
+    async def collect_members(self, sleep_interval: float=60.0):
+        '''\
+        Periodly collect members, when one member failed, try to connect
+        others.
+        '''
+        while self.is_alive():
+            try:
+                server_urls = []
+                for member in await self.cluster.list_members():
+                    server_urls.extend(member.clientURLs)
+                    self._server_urls = server_urls
+                    logger.info('current members %s', self._server_urls)
+                await asyncio.sleep(sleep_interval)
+            except RuntimeError as e:
+                print('runtime error', e)
+                logging.warning('runtime error %s', e)
+                break
 
     @property
-    def kv(self):
+    def kv(self) -> 'KVClient':
         if self._kv is None:
             self._kv = KVClient(self)
         return self._kv
 
     @property
-    def lease(self):
+    def lease(self) -> 'LeaseClient':
         if self._lease is None:
-            self._lease = KVClient(self)
+            self._lease = LeaseClient(self)
         return self._lease
 
     @property
-    def watch(self):
+    def watch(self) -> 'WatchClient':
         if self._watch is None:
-            self._watch = KVClient(self)
+            self._watch = WatchClient(self)
         return self._watch
 
-class KVClient:
+    @property
+    def cluster(self) -> 'ClusterClient':
+        if self._cluster is None:
+            self._cluster = ClusterClient(self)
+        return self._cluster
+
+
+class ClientSection:
     client: 'Client'
+    stub_cls: Type
+
     def __init__(self, client: 'Client'):
         self.client = client
-        self._stub = KVStub(self.client.channel)
 
+    @property
+    def stub(self) -> Any:
+        return self.stub_cls(self.client.channel)
+
+def section_retry(n:int=10):
+    def outer(func):
+        @wraps(func)
+        async def wrapped(section, *args, **kwargs) -> Any:
+            for retry_times in range(n):
+                try:
+                    return await func(section, *args, **kwargs)
+                except OSError:
+                    if retry_times < n - 1:
+                        logger.warning('etcd function %s failed, retry times %s',
+                                       func, retry_times)
+                        await asyncio.sleep(1)
+                        section.client.select_server()
+                    else:
+                        raise
+        return wrapped
+    return outer
+
+class KVClient(ClientSection):
+    stub_cls = KVStub
+
+    @section_retry()
     async def put(self,
                   key: Union[bytes, str],
                   value: Union[bytes, str],
@@ -54,7 +145,7 @@ class KVClient:
         key = ensure_bytes(key)
         value = ensure_bytes(value)
 
-        resp = await self._stub.Put(
+        resp = await self.stub.Put(
             pb2.PutRequest(
                 key=key,
                 value=value,
@@ -73,18 +164,17 @@ class KVClient:
         else:
             return None
 
+    @section_retry()
     async def get_range(self,
                         start: Union[bytes, str],
                         end: Union[bytes, str],
                         limit: int=0,
-                        sort_by: Union[None, str]=None
-    ) -> pb2.RangeResponse:
-
+                        sort_by: str='') -> pb2.RangeResponse:
         start = ensure_bytes(start)
 
         end = ensure_bytes(end)
 
-        if sort_by in (None, ''):
+        if not sort_by:
             sort_order = pb2.RangeRequest.SortOrder.NONE
             sort_t = 'key'
         elif sort_by.startswith('-'):
@@ -99,9 +189,7 @@ class KVClient:
         sort_target = getattr(pb2.RangeRequest.SortTarget,
                               sort_t.upper())
 
-
-
-        resp = await self._stub.Range(
+        resp = await self.stub.Range(
             pb2.RangeRequest(
                 key=start,
                 range_end=end,
@@ -111,102 +199,88 @@ class KVClient:
             ))
         return resp
 
-class LeaseClient:
-    client: 'Client'
-    def __init__(self, client: Client):
-        self.client = client
-        self._stub = LeaseStub(self.client.channel)
+class LeaseClient(ClientSection):
+    stub_cls = LeaseStub
+    lease_ids: List[int]
 
-    async def grant(self, ttl: int, lease_id: int=0) -> int:
-        resp = await self._stub.LeaseGrant(
+    def __init__(self, *args, **kwargs):
+        super(LeaseClient, self).__init__(*args, **kwargs)
+        self.lease_ids = []
+
+    @section_retry()
+    async def grant(self, ttl: int, lease_id: int=0) -> pb2.LeaseGrantResponse:
+        resp = await self.stub.LeaseGrant(
             pb2.LeaseGrantRequest(
                 TTL=ttl,
                 ID=lease_id))
-        return resp.ID
+        return resp
 
+    @section_retry()
     async def revoke(self, lease_id: int) -> None:
-        await self._stub.LeaseRevoke(
+        await self.stub.LeaseRevoke(
             pb2.LeaseRevokeRequest(
                 ID=lease_id))
 
-    async def keep_alive(self, lease_id: int, sleep_interval:float=1) -> None:
-        async with self._stub.LeaseKeepAlive.open() as stream:
-            await stream.send_message(
-                pb2.LeaseKeepAliveRequest(
-                    ID=lease_id))
+    @section_retry()
+    async def keep_alive(self, lease_id:int, sleep_interval:float=1) -> None:
+        while self.client.is_alive():
+            async with self.stub.LeaseKeepAlive.open() as stream:
+                await stream.send_message(
+                    pb2.LeaseKeepAliveRequest(
+                        ID=lease_id), end=True)
+                resp = await stream.recv_message()
             await asyncio.sleep(sleep_interval)
 
     # TODO: TimeToLive and Lease and Leases
 
-class Watcher:
-    def __init__(self):
-        self._queue = Queue()
+class WatchClient(ClientSection):
+    stub_cls = WatchStub
 
-    async def put(self, value:Any) -> None:
-        await self._queue.put(value)
+    async def keep_watching(self,
+                            *key_ranges:KeyRange
+    ) -> AsyncGenerator[pb2.WatchResponse, None]:
+        while self.client.is_alive():
+            try:
+                async for resp in self.open_stream(*key_ranges):
+                    yield resp
+            except OSError as e:
+                # ConnectionRefusedError
+                logger.warning('watching failed, %s', e)
+                self.client.select_server()
+                await asyncio.sleep(1)
 
-    async def get(self) -> pb2.WatchResponse:
-        resp = await self._queue.get()
-        assert isinstance(resp, WatchResponse)
-        return resp
+    async def open_stream(self,
+                   *key_ranges:KeyRange
+    ) -> AsyncGenerator[pb2.WatchResponse, None]:
 
-class WatchClient:
-    client: 'Client'
-    #stream: Stream
-    def __init__(self, client: Client):
-        self.client = client
-        self._stub = WatchStub(self.client.channel)
-        self.pending_watchers = Queue()
-        self.created_watchers = Queue()
-        self.canceled_watchers = Queue()
-        self.stream = None
-        self.watchers = {}
+        async with self.stub.Watch.open() as stream:
+            logging.info('stream %s opened to watch %s', stream, key_ranges)
+            for key, range_end in key_ranges:
+                await stream.send_message(pb2.WatchRequest(
+                    create_request=pb2.WatchCreateRequest(
+                        key=ensure_bytes(key),
+                        range_end=ensure_bytes(range_end))))
 
-    async def handle_messages(self):
-        while self.client.continue_stream:
-            resp = await self.stream.recv_message()
-            if resp.created:
-                watcher = self.pending_watchers.get_nowait()
-                assert watcher
-                watcher.id = resp.watch_id
-                self.created_watchers.put(watcher)
-                self.watchers[watcher.id] = watcher
-            elif resp.canceled:
-                watcher = self.watchers.pop(resp.watch_id)
-                self.canceled_watchers.put(watcher)
-            else:
-                watcher = self.watchers[resp.watch_id]
-                await watcher.put(resp)
+            watch_id: int = 0
+            while self.client.is_alive():
+                try:
+                    resp = await stream.recv_message()
+                except StreamTerminatedError:
+                    logger.warning('stream watching terminated %s', stream)
+                    break
+                if resp.created:
+                    watch_id = resp.watch_id
+                elif resp.canceled:
+                    await stream.send_request(end=True)
+                    break
+                else:
+                    yield resp
 
-    async def watch(self,
-                    key: Union[bytes, str],
-                    range_end: Union[bytes, str]=''
-    ) -> Watcher:
-        if self.stream is None:
-            self.stream = self._stub.Watch.open()
-            asyncio.ensure_future(self.handle_messages())
+class ClusterClient(ClientSection):
+    stub_cls = ClusterStub
 
-        watcher = Watcher()
-        self.pending_watchers.put(watcher)
-
-        await self.stream.send_message(pb2.WatchRequest(
-            create_request=pb2.WatchCreateRequest(
-                key=ensure_bytes(key),
-                range_end=ensure_bytes(range_end))))
-
-        created_w  = await self.created_watchers.get()
-        return created_w
-
-    async def cancel_watcher(self, watch_id: int) -> Watcher:
-        if self.stream is None:
-            self.stream = self._stub.Watch.open()
-
-        watcher = Watcher()
-        self.pending_watchers.put(watcher)
-
-        await self.stream.send_message(pb2.WatchRequest(
-            cancel_request=pb2.WatchCancelRequest(
-                watch_id=watch_id)))
-
-        canceled_w = await self.canceled_watchers.get()
-        return canceled_w
+    @section_retry()
+    async def list_members(self) -> List[pb2.Member]:
+        resp = await self.stub.MemberList(
+            pb2.MemberListRequest())
+        return resp.members
