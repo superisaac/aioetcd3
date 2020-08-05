@@ -2,14 +2,14 @@ from distutils.core import setup
 from setuptools import find_packages
 
 setup(name='aioetcd3',
-      version='0.0.1',
+      version='0.0.2',
       description='asyncio etcd3 client lib using grpclib',
       author='Zeng Ke',
-      author_email='zk@bixin.com',
+      author_email='superisaac@gmail.com',
       packages=find_packages(),
       scripts=[],
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 0 - Beta',
           'Environment :: Console',
           'Intended Audience :: Developers',
           'License :: MIT',
