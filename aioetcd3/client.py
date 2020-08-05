@@ -25,10 +25,10 @@ KeyRange = Tuple[Union[bytes, str], Union[bytes, str]]
 class Client:
     channel: Channel
     status: str = 'alive'
-    _kv: Optional['KVClient'] = None
-    _lease: Optional['LeaseClient'] = None
-    _watch: Optional['WatchClient'] = None
-    _cluster: Optional['ClusterClient'] = None
+    _kv: Optional['KVSection'] = None
+    _lease: Optional['LeaseSection'] = None
+    _watch: Optional['WatchSection'] = None
+    _cluster: Optional['ClusterSection'] = None
     _server_urls: List[str]
     _current_server_url: str = ''
     _etcd_args: Dict[str, Any]
@@ -79,27 +79,27 @@ class Client:
                 break
 
     @property
-    def kv(self) -> 'KVClient':
+    def kv(self) -> 'KVSection':
         if self._kv is None:
-            self._kv = KVClient(self)
+            self._kv = KVSection(self)
         return self._kv
 
     @property
-    def lease(self) -> 'LeaseClient':
+    def lease(self) -> 'LeaseSection':
         if self._lease is None:
-            self._lease = LeaseClient(self)
+            self._lease = LeaseSection(self)
         return self._lease
 
     @property
-    def watch(self) -> 'WatchClient':
+    def watch(self) -> 'WatchSection':
         if self._watch is None:
-            self._watch = WatchClient(self)
+            self._watch = WatchSection(self)
         return self._watch
 
     @property
-    def cluster(self) -> 'ClusterClient':
+    def cluster(self) -> 'ClusterSection':
         if self._cluster is None:
-            self._cluster = ClusterClient(self)
+            self._cluster = ClusterSection(self)
         return self._cluster
 
 
@@ -132,7 +132,7 @@ def section_retry(n:int=10):
         return wrapped
     return outer
 
-class KVClient(ClientSection):
+class KVSection(ClientSection):
     stub_cls = KVStub
 
     @section_retry()
@@ -199,13 +199,8 @@ class KVClient(ClientSection):
             ))
         return resp
 
-class LeaseClient(ClientSection):
+class LeaseSection(ClientSection):
     stub_cls = LeaseStub
-    lease_ids: List[int]
-
-    def __init__(self, *args, **kwargs):
-        super(LeaseClient, self).__init__(*args, **kwargs)
-        self.lease_ids = []
 
     @section_retry()
     async def grant(self, ttl: int, lease_id: int=0) -> pb2.LeaseGrantResponse:
@@ -216,24 +211,28 @@ class LeaseClient(ClientSection):
         return resp
 
     @section_retry()
-    async def revoke(self, lease_id: int) -> None:
-        await self.stub.LeaseRevoke(
+    async def revoke(self, lease_id: int) -> pb2.LeaseRevokeResponse:
+        return await self.stub.LeaseRevoke(
             pb2.LeaseRevokeRequest(
                 ID=lease_id))
 
     @section_retry()
-    async def keep_alive(self, lease_id:int, sleep_interval:float=1) -> None:
-        while self.client.is_alive():
-            async with self.stub.LeaseKeepAlive.open() as stream:
-                await stream.send_message(
-                    pb2.LeaseKeepAliveRequest(
-                        ID=lease_id), end=True)
-                resp = await stream.recv_message()
-            await asyncio.sleep(sleep_interval)
+    async def keep_alive(self, *lease_ids:int, sleep_interval:float=1) -> None:
+        assert not not lease_ids, "lease id list cannot be empty"
+        async with self.stub.LeaseKeepAlive.open() as stream:
+            while self.client.is_alive():
+                for lease_id in lease_ids:
+                    await stream.send_message(
+                        pb2.LeaseKeepAliveRequest(
+                            ID=lease_id))
+                for _ in lease_ids:
+                    resp = await stream.recv_message()
+
+                await asyncio.sleep(sleep_interval)
 
     # TODO: TimeToLive and Lease and Leases
 
-class WatchClient(ClientSection):
+class WatchSection(ClientSection):
     stub_cls = WatchStub
 
     async def keep_watching(self,
@@ -276,7 +275,7 @@ class WatchClient(ClientSection):
                 else:
                     yield resp
 
-class ClusterClient(ClientSection):
+class ClusterSection(ClientSection):
     stub_cls = ClusterStub
 
     @section_retry()

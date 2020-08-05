@@ -18,8 +18,8 @@ setup(name='aioetcd3',
           'Topic :: Micro-Services',
       ],
       install_requires=[
-          'protobuf',
-          'grpclib',
+          'protobuf>=3.12.4',
+          'grpclib>=0.3.2',
       ],
       python_requires='>=3.6',
 )

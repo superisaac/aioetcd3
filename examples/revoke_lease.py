@@ -4,14 +4,12 @@ import asyncio
 import argparse
 from aioetcd3.client import Client
 
-async def main() -> Client:
+async def main() -> None:
     # parse arguments
     parser = argparse.ArgumentParser(description='put k/v while retaining the lease')
-    parser.add_argument('key',
-                        type=str,
-                        help='the key to put')
-    parser.add_argument('value', type=str,
-                        help='the value to put')
+    parser.add_argument('lease_id',
+                        type=int,
+                        help='lease ID to revoke')
     parser.add_argument('--etcd',
                         type=str,
                         default='http://127.0.0.1:2379',
@@ -20,15 +18,8 @@ async def main() -> Client:
 
     c = Client(args.etcd)
 
-    lease1 = await c.lease.grant(5)
-    print('got lease 1', lease1.ID)
-
-    lease2 = await c.lease.grant(5)
-    print('got lease 2', lease2.ID)
-
-    await c.kv.put(args.key, args.value, lease_id=lease2.ID)
-    await c.lease.keep_alive(lease1.ID, lease2.ID)
-    return c
+    resp = await c.lease.revoke(args.lease_id)
+    print('revoke resp', resp)
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
