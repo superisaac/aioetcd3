@@ -28,7 +28,7 @@ asyncio.ensure_future(c.lease.keep_alive(lease.ID))
 ### watch key
 ```python
 c = Client(...)
-async for resp in c.watch.open_stream((b'key1', ''), (b'key2', ''), (b'key11', b'key12')):
+async for resp in c.watch.open_stream(b'key1', 'key2', (b'key11', b'key12')):
     print(resp)
 ```
 

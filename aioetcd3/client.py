@@ -20,7 +20,7 @@ from .utils import ensure_bytes, prefix_range_end
 
 logger = logging.getLogger(__name__)
 
-KeyRange = Tuple[Union[bytes, str], Union[bytes, str]]
+KeyRange = Union[str, bytes, Tuple[Union[bytes, str], Union[bytes, str]]]
 
 class Client:
     channel: Channel
@@ -254,7 +254,14 @@ class WatchSection(ClientSection):
 
         async with self.stub.Watch.open() as stream:
             logging.info('stream %s opened to watch %s', stream, key_ranges)
-            for key, range_end in key_ranges:
+
+            #for key, range_end in key_ranges:
+            for r in key_ranges:
+                if isinstance(r, (str, bytes)):
+                    key, range_end = ensure_bytes(r), ''
+                else:
+                    assert isinstance(r, (tuple, list))
+                    key, range_end = r
                 await stream.send_message(pb2.WatchRequest(
                     create_request=pb2.WatchCreateRequest(
                         key=ensure_bytes(key),
