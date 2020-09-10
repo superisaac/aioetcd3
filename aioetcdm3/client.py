@@ -140,19 +140,35 @@ class KVSection(ClientSection):
                   key: Union[bytes, str],
                   value: Union[bytes, str],
                   lease_id: int=0,
-                  prev_kv: bool=False) -> bytes:
-
+                  expect_prev_value: Optional[bytes]=None
+                  ) -> bool:
+        '''
+        :return: the put is success or not
+        '''
         key = ensure_bytes(key)
         value = ensure_bytes(value)
 
-        resp = await self.stub.Put(
-            pb2.PutRequest(
-                key=key,
-                value=value,
-                lease=lease_id,
-                prev_kv=prev_kv
-            ))
-        return resp.prev_kv.value
+        req = pb2.PutRequest(
+            key=key,
+            value=value,
+            lease=lease_id
+        )
+        if expect_prev_value is None:
+            resp = await self.stub.Put(req)
+            return True
+        else:
+            expect_prev_value = ensure_bytes(expect_prev_value)
+            txnreq = pb2.TxnRequest(
+                compare=[pb2.Compare(
+                    result=pb2.Compare.CompareResult.EQUAL,
+                    target=pb2.Compare.CompareTarget.VALUE,
+                    key=key,
+                    value=expect_prev_value
+                )],
+                success=[pb2.RequestOp(request_put=req)]
+            )
+            txnresp = await self.stub.Txn(txnreq)
+            return txnresp.succeeded
 
     async def get(self,
                   key: Union[bytes, str]) -> Optional[bytes]:

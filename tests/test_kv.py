@@ -2,17 +2,21 @@ import pytest
 from aioetcdm3.client import Client
 from aioetcdm3.utils import ensure_bytes, prefix_range_end
 
+@pytest.fixture
+def etcd_client():
+    return Client('http://127.0.0.1')
+
 @pytest.mark.asyncio
-async def test_put_get():
-    c = Client('http://127.0.0.1')
+async def test_put_get(etcd_client):
+    c = etcd_client
     await c.kv.put("hello", "nice")
 
     r = await c.kv.get("hello")
     assert r == b'nice'
 
 @pytest.mark.asyncio
-async def test_range_put_get():
-    c = Client('http://127.0.0.1')
+async def test_range_put_get(etcd_client):
+    c = etcd_client
     for i in range(5):
         await c.kv.put(f'what{i}', f'ok{i}')
 
@@ -23,8 +27,24 @@ async def test_range_put_get():
         assert resp.kvs[i].value == ensure_bytes(f'ok{i}')
 
 @pytest.mark.asyncio
-async def test_delete():
-    c = Client('http://127.0.0.1')
+async def test_put_w_prev(etcd_client):
+    c = etcd_client
+    succeed = await c.kv.put('hello', 'first')
+    assert succeed is True
+
+    succeed = await c.kv.put('hello', 'second', expect_prev_value='not exist')
+    assert succeed is False
+
+    prev_v = await c.kv.get('hello')
+    assert prev_v == b'first'
+
+    succeed = await c.kv.put('hello', 'second', expect_prev_value=prev_v)
+    assert succeed is True
+
+
+@pytest.mark.asyncio
+async def test_delete(etcd_client):
+    c = etcd_client
     for i in range(5):
         await c.kv.put(f'what{i}', f'ok{i}')
 
