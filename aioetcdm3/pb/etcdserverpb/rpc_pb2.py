@@ -12,8 +12,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from aioetcdm3.pb.mvccpb from aioetcdm3.pb.mvccpb import kv_pb2 as kv__pb2
-from aioetcdm3.pb.authpb from aioetcdm3.pb.authpb import auth_pb2 as auth__pb2
+from aioetcdm3.pb.mvccpb import kv_pb2 as kv__pb2
+from aioetcdm3.pb.authpb import auth_pb2 as auth__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

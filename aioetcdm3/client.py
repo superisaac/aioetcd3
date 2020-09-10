@@ -199,6 +199,32 @@ class KVSection(ClientSection):
             ))
         return resp
 
+    async def delete(self,
+                     key: Union[bytes, str],
+                     prev_kv: bool = False) -> Optional[bytes]:
+        key = ensure_bytes(key)
+
+        resp = await self.delete_range(key, b"", prev_kv=prev_kv)
+        if resp.prev_kvs:
+            return resp.prev_kvs[0].value
+        else:
+            return None
+
+    @section_retry()
+    async def delete_range(self,
+                           start: Union[bytes, str],
+                           end: Union[bytes, str],
+                           prev_kv: bool = False) ->  pb2.DeleteRangeResponse:
+        start = ensure_bytes(start)
+        end = ensure_bytes(end)
+
+        resp = await self.stub.DeleteRange(
+            pb2.DeleteRangeRequest(
+                key=start,
+                range_end=end,
+                prev_kv=prev_kv))
+        return resp
+
 class LeaseSection(ClientSection):
     stub_cls = LeaseStub
 
