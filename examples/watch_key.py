@@ -2,7 +2,7 @@ import time
 import signal
 import asyncio
 import argparse
-from aioetcd3.client import Client
+from aioetcdm3.client import Client
 
 async def main() -> None:
     # parse arguments

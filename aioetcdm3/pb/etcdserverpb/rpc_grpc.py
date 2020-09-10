@@ -9,9 +9,9 @@ import grpclib.client
 if typing.TYPE_CHECKING:
     import grpclib.server
 
-from aioetcd3.pb.mvccpb import kv_pb2
-from aioetcd3.pb.authpb import auth_pb2
-from aioetcd3.pb.etcdserverpb import rpc_pb2
+from aioetcdm3.pb.mvccpb from aioetcdm3.pb.mvccpb import kv_pb2
+from aioetcdm3.pb.authpb from aioetcdm3.pb.authpb import auth_pb2
+from aioetcdm3.pb.etcdserverpb from aioetcdm3.pb.etcdserverpb import rpc_pb2
 
 
 class KVBase(abc.ABC):

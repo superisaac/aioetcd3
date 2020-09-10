@@ -1,9 +1,9 @@
-# aioetcd3
+# aioetcdm3
 robust asyncio etcd3 client using grpclib
 
 ## install
 ```shell
-pip install git+https://github.com/superisaac/aioetcd3.git
+pip install git+https://github.com/superisaac/aioetcdm3.git
 ```
 
 ## examples

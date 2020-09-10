@@ -1,8 +1,8 @@
 from distutils.core import setup
 from setuptools import find_packages
 
-setup(name='aioetcd3',
-      version='0.0.3',
+setup(name='aioetcdm3',
+      version='0.0.4',
       description='asyncio etcd3 client lib using grpclib',
       author='Zeng Ke',
       author_email='superisaac@gmail.com',

@@ -1,6 +1,6 @@
 import pytest
-from aioetcd3.client import Client
-from aioetcd3.utils import ensure_bytes, prefix_range_end
+from aioetcdm3.client import Client
+from aioetcdm3.utils import ensure_bytes, prefix_range_end
 
 @pytest.mark.asyncio
 async def test_put_get():

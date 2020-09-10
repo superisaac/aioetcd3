@@ -10,9 +10,9 @@ from functools import wraps
 from grpclib.client import Channel, Stream
 from grpclib.exceptions import StreamTerminatedError
 
-from aioetcd3.pb.etcdserverpb import rpc_pb2 as pb2
-from aioetcd3.pb.mvccpb import kv_pb2
-from aioetcd3.pb.etcdserverpb.rpc_grpc import (
+from aioetcdm3.pb.etcdserverpb import rpc_pb2 as pb2
+from aioetcdm3.pb.mvccpb import kv_pb2
+from aioetcdm3.pb.etcdserverpb.rpc_grpc import (
     KVStub, WatchStub, LeaseStub, ClusterStub,
     MaintenanceStub, AuthStub)
 
